@@ -1,0 +1,33 @@
+{
+  "name": "opencode-host-notify-bridge",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that forwards notification events from devcontainers to a host-side notifier.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "bin": {
+    "opencode-host-notify-server": "./bin/opencode-host-notify-server.mjs"
+  },
+  "files": [
+    "index.js",
+    "bin/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "devcontainer",
+    "notifications",
+    "zed",
+    "terminal"
+  ],
+  "license": "MIT",
+  "author": "zerdest",
+  "oc-plugin": [
+    "server"
+  ]
+}

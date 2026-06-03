@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "endpoint": "http://host.docker.internal:8765/notify",
+  "endpoints": [
+    "http://host.docker.internal:8765/notify",
+    "http://gateway.docker.internal:8765/notify"
+  ],
+  "token": "replace-me",
+  "title": "OpenCode",
+  "cooldownMs": 1500,
+  "timeoutMs": 1200,
+  "bellOnFailure": true,
+  "bellOnEveryEvent": false,
+  "events": [
+    "permission.asked",
+    "question.asked",
+    "session.idle"
+  ]
+}
