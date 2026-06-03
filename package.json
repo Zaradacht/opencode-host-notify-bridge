@@ -8,7 +8,7 @@
     ".": "./index.js"
   },
   "bin": {
-    "opencode-host-notify-server": "./bin/opencode-host-notify-server.mjs"
+    "opencode-host-notify-server": "bin/opencode-host-notify-server.mjs"
   },
   "files": [
     "index.js",
