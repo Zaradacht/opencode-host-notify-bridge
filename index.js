@@ -9,6 +9,17 @@ const DEFAULT_EVENTS = new Set([
   "session.idle",
 ]);
 
+const DEFAULT_BLOCKED_EVENTS = new Set([
+  "task.finished",
+  "task.completed",
+  "task.done",
+  "agent.finished",
+  "agent.completed",
+  "subagent.finished",
+  "subagent.completed",
+  "message.updated",
+]);
+
 const DEFAULT_COOLDOWN_MS = 1500;
 const DEFAULT_TIMEOUT_MS = 1200;
 const DEFAULT_ENDPOINTS = [
@@ -40,6 +51,33 @@ function normalizeEvents(events) {
     .filter((event) => event.length > 0);
 
   return normalized.length > 0 ? new Set(normalized) : DEFAULT_EVENTS;
+}
+
+function normalizeBlockedEvents(blockedEvents) {
+  if (!Array.isArray(blockedEvents)) {
+    return DEFAULT_BLOCKED_EVENTS;
+  }
+
+  const normalized = blockedEvents
+    .filter((event) => typeof event === "string")
+    .map((event) => event.trim())
+    .filter((event) => event.length > 0);
+
+  return new Set([...DEFAULT_BLOCKED_EVENTS, ...normalized]);
+}
+
+function eventBlocked(eventType, blockedEvents) {
+  if (blockedEvents.has(eventType)) {
+    return true;
+  }
+
+  for (const event of blockedEvents) {
+    if (event.endsWith("*") && eventType.startsWith(event.slice(0, -1))) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function normalizeNumber(value, fallback) {
@@ -149,6 +187,7 @@ export async function server(_input, options = {}) {
       ? config.enabled
       : isProbablyContainer();
   const events = normalizeEvents(options.events ?? config.events);
+  const blockedEvents = normalizeBlockedEvents(options.blockedEvents ?? config.blockedEvents);
   const cooldownMs = normalizeNumber(options.cooldownMs ?? config.cooldownMs, DEFAULT_COOLDOWN_MS);
   const timeoutMs = normalizeNumber(options.timeoutMs ?? config.timeoutMs, DEFAULT_TIMEOUT_MS);
   const endpoints = normalizeEndpoints(config, options);
@@ -168,7 +207,7 @@ export async function server(_input, options = {}) {
 
   return {
     event: async ({ event, sessionID }) => {
-      if (!enabled || !event || !events.has(event.type)) {
+      if (!enabled || !event || !events.has(event.type) || eventBlocked(event.type, blockedEvents)) {
         return;
       }
 

@@ -11,6 +11,27 @@ const DEFAULT_CONFIG = {
   port: 8765,
   token: "",
   sound: "Glass",
+  sounds: {},
+  notificationEnabled: true,
+  notificationApp: "Zed",
+  notificationBundleId: "dev.zed.Zed",
+  allowedEvents: [
+    "permission.asked",
+    "question.asked",
+    "session.idle",
+    "session.error",
+    "session.failed",
+  ],
+  blockedEvents: [
+    "task.finished",
+    "task.completed",
+    "task.done",
+    "agent.finished",
+    "agent.completed",
+    "subagent.finished",
+    "subagent.completed",
+    "message.updated",
+  ],
   speechEnabled: false,
   voice: "Samantha",
   rate: 200,
@@ -46,11 +67,21 @@ function runDetached(command, args) {
 }
 
 function shellQuote(value) {
-  return String(value).replace(/"/g, "\\\"");
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\r?\n/g, " ");
 }
 
-function notifyMac(title, body, sound) {
-  const script = `display notification "${shellQuote(body)}" with title "${shellQuote(title)}" sound name "${shellQuote(sound)}"`;
+function notifyMac(title, body, sound, config) {
+  if (config.notificationEnabled === false) {
+    return;
+  }
+
+  const appName = typeof config.notificationApp === "string" && config.notificationApp.length > 0
+    ? config.notificationApp
+    : "Zed";
+  const script = [
+    `display notification "${shellQuote(body)}" with title "${shellQuote(title)}" sound name "${shellQuote(sound)}"`,
+    `tell application "${shellQuote(appName)}" to activate`,
+  ].join("\n");
   runDetached("osascript", ["-e", script]);
 }
 
@@ -71,6 +102,35 @@ function speak(body, voice, rate) {
 
   args.push(body);
   runDetached("say", args);
+}
+
+function normalizeStringList(value, fallback = []) {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+  return value.filter((item) => typeof item === "string" && item.trim().length > 0);
+}
+
+function eventAllowed(eventType, config) {
+  if (typeof eventType !== "string" || eventType.trim().length === 0) {
+    return false;
+  }
+
+  const blocked = normalizeStringList(config.blockedEvents, DEFAULT_CONFIG.blockedEvents);
+  if (blocked.includes(eventType) || blocked.some((event) => event.endsWith("*") && eventType.startsWith(event.slice(0, -1)))) {
+    return false;
+  }
+
+  const allowed = normalizeStringList(config.allowedEvents, DEFAULT_CONFIG.allowedEvents);
+  return allowed.length === 0 || allowed.includes(eventType);
+}
+
+function soundForEvent(eventType, config) {
+  const sounds = config.sounds && typeof config.sounds === "object" && !Array.isArray(config.sounds)
+    ? config.sounds
+    : {};
+  const sound = sounds[eventType];
+  return typeof sound === "string" && sound.length > 0 ? sound : config.sound;
 }
 
 function json(response, statusCode, payload) {
@@ -108,6 +168,12 @@ async function start() {
       return;
     }
 
+    const eventType = typeof payload.eventType === "string" ? payload.eventType : "";
+    if (!eventAllowed(eventType, config)) {
+      json(response, 200, { ok: true, skipped: true, eventType });
+      return;
+    }
+
     const title = typeof payload.title === "string" && payload.title.length > 0
       ? payload.title
       : "OpenCode";
@@ -116,9 +182,9 @@ async function start() {
       : "Needs attention";
     const sound = typeof payload.sound === "string" && payload.sound.length > 0
       ? payload.sound
-      : config.sound;
+      : soundForEvent(eventType, config);
 
-    notifyMac(title, body, sound);
+    notifyMac(title, body, sound, config);
     playSound(sound);
 
     if (config.speechEnabled) {
