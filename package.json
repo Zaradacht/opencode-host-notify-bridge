@@ -1,6 +1,6 @@
 {
   "name": "opencode-host-notify-bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenCode plugin that forwards notification events from devcontainers to a host-side notifier.",
   "type": "module",
   "main": "index.js",

@@ -13,8 +13,10 @@ const DEFAULT_CONFIG = {
   sound: "Glass",
   sounds: {},
   notificationEnabled: true,
-  notificationApp: "Zed",
-  notificationBundleId: "dev.zed.Zed",
+  notificationTarget: "iterm",
+  notificationApp: "iTerm",
+  notificationBundleId: "com.googlecode.iterm2",
+  notificationSender: "com.googlecode.iterm2",
   allowedEvents: [
     "permission.asked",
     "question.asked",
@@ -60,6 +62,7 @@ function runDetached(command, args) {
       detached: true,
       stdio: "ignore",
     });
+    child.on("error", () => {});
     child.unref();
   } catch {
     // Host notifications should never crash the bridge server.
@@ -75,14 +78,48 @@ function notifyMac(title, body, sound, config) {
     return;
   }
 
-  const appName = typeof config.notificationApp === "string" && config.notificationApp.length > 0
-    ? config.notificationApp
-    : "Zed";
+  const target = notificationTarget(config);
+  runDetached("terminal-notifier", [
+    "-title",
+    title,
+    "-message",
+    body,
+    "-sound",
+    sound,
+    "-sender",
+    target.sender,
+    "-activate",
+    target.sender,
+  ]);
+
   const script = [
     `display notification "${shellQuote(body)}" with title "${shellQuote(title)}" sound name "${shellQuote(sound)}"`,
-    `tell application "${shellQuote(appName)}" to activate`,
+    `tell application "${shellQuote(target.app)}" to activate`,
   ].join("\n");
-  runDetached("osascript", ["-e", script]);
+  if (config.notificationFallback !== false) {
+    runDetached("osascript", ["-e", script]);
+  }
+}
+
+function notificationTarget(config) {
+  if (config.notificationTarget === "zed") {
+    return { app: "Zed", sender: "dev.zed.Zed" };
+  }
+
+  if (config.notificationTarget === "iterm") {
+    return { app: "iTerm", sender: "com.googlecode.iterm2" };
+  }
+
+  return {
+    app: typeof config.notificationApp === "string" && config.notificationApp.length > 0
+      ? config.notificationApp
+      : "iTerm",
+    sender: typeof config.notificationSender === "string" && config.notificationSender.length > 0
+      ? config.notificationSender
+      : typeof config.notificationBundleId === "string" && config.notificationBundleId.length > 0
+        ? config.notificationBundleId
+        : "com.googlecode.iterm2",
+  };
 }
 
 function playSound(sound) {

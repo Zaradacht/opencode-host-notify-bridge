@@ -11,8 +11,11 @@
     "session.failed": "Basso"
   },
   "notificationEnabled": true,
-  "notificationApp": "Zed",
-  "notificationBundleId": "dev.zed.Zed",
+  "notificationTarget": "iterm",
+  "notificationApp": "iTerm",
+  "notificationBundleId": "com.googlecode.iterm2",
+  "notificationSender": "com.googlecode.iterm2",
+  "notificationFallback": false,
   "allowedEvents": [
     "permission.asked",
     "question.asked",

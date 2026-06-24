@@ -9,6 +9,8 @@
   "title": "OpenCode",
   "cooldownMs": 1500,
   "timeoutMs": 1200,
+  "ignoreSubagents": true,
+  "ignoreBackgroundTasks": true,
   "bellOnFailure": true,
   "bellOnEveryEvent": false,
   "events": [

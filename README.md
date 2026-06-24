@@ -22,6 +22,7 @@ opencode-host-notify-server
 - listens for OpenCode events inside the plugin runtime
 - forwards those events to a host HTTP endpoint
 - keeps notifications focused on user-attention events
+- ignores subagent and background-task sessions by default
 - falls back to a terminal bell if the host endpoint is unreachable
 
 Default events:
@@ -68,6 +69,8 @@ Important fields:
 - `endpoint` / `endpoints`: where the container should POST notifications
 - `token`: shared secret between plugin and host process
 - `events`: which OpenCode events trigger notifications
+- `ignoreSubagents`: ignore notifications from task/subagent sessions; defaults to `true`
+- `ignoreBackgroundTasks`: ignore notifications from background task sessions; defaults to `true`
 
 ### 3. Create host server config
 
@@ -79,6 +82,9 @@ Important fields:
 - `port`
 - `token`
 - `sound`
+- `notificationTarget`: `iterm`, `zed`, or custom fields; defaults to `iterm`
+- `notificationSender`: macOS bundle identifier used by `terminal-notifier`
+- `notificationFallback`: set to `true` to also use AppleScript notifications; defaults to enabled when omitted
 - `speechEnabled`
 
 ### 4. Start the host server
@@ -125,9 +131,35 @@ Avoid `message.updated` unless you explicitly want noisy per-message notificatio
 
 The host process uses:
 
-- `osascript` for Notification Center alerts
+- `terminal-notifier` for Notification Center alerts attributed to the configured app sender
+- optional `osascript` fallback when `notificationFallback` is not `false`
 - `afplay` for system sounds
 - `say` only when `speechEnabled` is `true`
+
+Default notification targeting is iTerm:
+
+```json
+{
+  "notificationTarget": "iterm",
+  "notificationSender": "com.googlecode.iterm2",
+  "notificationFallback": false
+}
+```
+
+To target Zed instead:
+
+```json
+{
+  "notificationTarget": "zed",
+  "notificationSender": "dev.zed.Zed"
+}
+```
+
+Install `terminal-notifier` on macOS if it is not already available:
+
+```bash
+brew install terminal-notifier
+```
 
 ## Local development
 
